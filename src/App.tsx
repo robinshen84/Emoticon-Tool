@@ -11,7 +11,8 @@ type Tab = 'batch' | 'banner' | 'donation-guide' | 'donation-thanks' | 'cover' |
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('batch');
   const [darkMode, setDarkMode] = useState(false);
-  const [logoSrc, setLogoSrc] = useState<string | null>('/logo.svg');
+  const logoPng = `${import.meta.env.BASE_URL}logo.png`;
+  const [logoSrc, setLogoSrc] = useState<string | null>(logoPng);
 
   useEffect(() => {
     // Check system dark mode preference
@@ -108,8 +109,7 @@ function App() {
             alt="logo"
             className="h-10 w-10 object-contain"
             onError={() => {
-              if (logoSrc === '/logo.svg') setLogoSrc('/logo.png')
-              else setLogoSrc(null)
+              setLogoSrc(null)
             }}
             referrerPolicy="no-referrer"
           />
