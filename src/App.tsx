@@ -13,6 +13,10 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const logoPng = `${import.meta.env.BASE_URL}logo.png`;
   const [logoSrc, setLogoSrc] = useState<string | null>(logoPng);
+  const [aiMotionSrcUrl, setAiMotionSrcUrl] = useState<string | null>(null);
+  const [aiMotionPrompt, setAiMotionPrompt] = useState<string | null>(null);
+  const [aiMotionDataUrl, setAiMotionDataUrl] = useState<string | null>(null);
+  const [aiMotionImportError, setAiMotionImportError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check system dark mode preference
@@ -29,6 +33,39 @@ function App() {
     }
   }, [darkMode]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const src = params.get('ai_motion_src');
+    const prompt = params.get('ai_motion_prompt');
+    if (src) {
+      setAiMotionSrcUrl(src);
+      setActiveTab('ai-motion');
+    }
+    if (prompt) {
+      setAiMotionPrompt(prompt);
+      setActiveTab('ai-motion');
+    }
+  }, []);
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as any;
+      if (!data || data.source !== 'emoticon-tool-ext') return;
+      if (data.type === 'AI_MOTION_IMPORT_DATA_URL' && typeof data.dataUrl === 'string') {
+        setAiMotionDataUrl(data.dataUrl);
+        setAiMotionImportError(null);
+        setActiveTab('ai-motion');
+        return;
+      }
+      if (data.type === 'AI_MOTION_IMPORT_ERROR') {
+        setAiMotionImportError(typeof data.error === 'string' ? data.error : '图片导入失败');
+        setActiveTab('ai-motion');
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
   const modules: Array<{ id: Tab; node: React.ReactNode }> = [
     { id: 'batch', node: <ModuleBatchResize /> },
     { id: 'banner', node: <ModuleBanner /> },
@@ -36,7 +73,7 @@ function App() {
     { id: 'donation-thanks', node: <ModuleDonationThanks /> },
     { id: 'cover', node: <ModuleCover /> },
     { id: 'icon', node: <ModuleIcon /> },
-    { id: 'ai-motion', node: <ModuleAiMotion /> },
+    { id: 'ai-motion', node: <ModuleAiMotion externalImageUrl={aiMotionSrcUrl} externalImageDataUrl={aiMotionDataUrl} externalImportError={aiMotionImportError} initialPrompt={aiMotionPrompt} /> },
   ];
 
   const tabs = [

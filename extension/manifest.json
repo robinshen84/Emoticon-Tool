@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Emoticon-Tool",
+  "version": "0.1.0",
+  "description": "右键网页图片，打开 Emoticon-Tool 生成动图",
+  "permissions": ["contextMenus", "tabs", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "service_worker.js"
+  },
+  "action": {
+    "default_title": "Emoticon-Tool"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://robinshen84.github.io/Emoticon-Tool/*"],
+      "js": ["toolpage_bridge.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

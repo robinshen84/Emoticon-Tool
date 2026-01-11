@@ -6,7 +6,14 @@ import { jimengService } from '../services/jimengAiService';
 import { convertVideoToGif } from '../utils/videoToGif';
 import { downloadUrl } from '../utils/download';
 
-export const ModuleAiMotion: React.FC = () => {
+type ModuleAiMotionProps = {
+  externalImageUrl?: string | null;
+  externalImageDataUrl?: string | null;
+  externalImportError?: string | null;
+  initialPrompt?: string | null;
+};
+
+export const ModuleAiMotion: React.FC<ModuleAiMotionProps> = ({ externalImageUrl, externalImageDataUrl, externalImportError, initialPrompt }) => {
   const storageKey = 'ai-motion-state-v1';
   const [accessKey, setAccessKey] = useState('');
   const [secretKey, setSecretKey] = useState('');
@@ -25,6 +32,7 @@ export const ModuleAiMotion: React.FC = () => {
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [showVideoPreview, setShowVideoPreview] = useState(false);
+  const lastImportedRef = useRef<string | null>(null);
   
   // const [logs, setLogs] = useState<ApiLog[]>([]);
 
@@ -34,6 +42,19 @@ export const ModuleAiMotion: React.FC = () => {
     setSecretKey(keys.secretKey);
     // setBaseUrl(jimengService.getBaseUrl());
   }, []);
+
+  useEffect(() => {
+    if (!externalImportError) return;
+    setStatus('failed');
+    setError(externalImportError);
+    setStatusMsg(externalImportError);
+  }, [externalImportError]);
+
+  useEffect(() => {
+    if (typeof initialPrompt === 'string' && initialPrompt.trim()) {
+      setPrompt(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   useEffect(() => {
     try {
@@ -105,6 +126,60 @@ export const ModuleAiMotion: React.FC = () => {
       setStatus('idle');
     }
   }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!externalImageUrl) return;
+      try {
+        setError(null);
+        setStatusMsg('正在读取网页图片...');
+        setProgress(0);
+
+        const res = await fetch(externalImageUrl);
+        if (!res.ok) throw new Error(`下载失败（${res.status}）`);
+        const blob = await res.blob();
+        const type = blob.type || 'image/png';
+
+        const ext = type === 'image/jpeg' ? 'jpg' : type === 'image/webp' ? 'webp' : type === 'image/gif' ? 'gif' : type === 'image/png' ? 'png' : 'png';
+        const fileName = `web-image.${ext}`;
+        const f = new File([blob], fileName, { type });
+        handleFileDrop([f]);
+        setStatusMsg('');
+      } catch (e: any) {
+        setStatus('failed');
+        setError('读取网页图片失败：可能被站点限制跨域。可先保存图片到本地再上传。');
+        setStatusMsg(e?.message ? String(e.message) : '');
+      }
+    };
+    load();
+  }, [externalImageUrl, handleFileDrop]);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!externalImageDataUrl) return;
+      if (lastImportedRef.current === externalImageDataUrl) return;
+      lastImportedRef.current = externalImageDataUrl;
+      try {
+        setError(null);
+        setStatusMsg('正在导入图片...');
+        setProgress(0);
+
+        const res = await fetch(externalImageDataUrl);
+        const blob = await res.blob();
+        const type = blob.type || 'image/png';
+        const ext = type === 'image/jpeg' ? 'jpg' : type === 'image/webp' ? 'webp' : type === 'image/gif' ? 'gif' : type === 'image/png' ? 'png' : 'png';
+        const fileName = `web-image.${ext}`;
+        const f = new File([blob], fileName, { type });
+        handleFileDrop([f]);
+        setStatusMsg('');
+      } catch (e: any) {
+        setStatus('failed');
+        setError('导入图片失败');
+        setStatusMsg(e?.message ? String(e.message) : '');
+      }
+    };
+    load();
+  }, [externalImageDataUrl, handleFileDrop]);
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
