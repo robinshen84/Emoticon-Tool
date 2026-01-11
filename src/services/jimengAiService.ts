@@ -2,7 +2,7 @@ import axios, { type AxiosInstance } from 'axios';
 import CryptoJS from 'crypto-js';
 
 // Configuration
-const DEFAULT_API_BASE = '/api/volc';
+const DEFAULT_API_BASE = import.meta.env.DEV ? '/api/volc' : 'https://visual.volcengineapi.com';
 const STORAGE_KEY_ACCESS_KEY = 'jimeng_access_key';
 const STORAGE_KEY_SECRET_KEY = 'jimeng_secret_key';
 
